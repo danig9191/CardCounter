@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Card Counter Pro — Evolution Edition</title>
+<style>
+  :root {
+    --bg-deep: #0a1018;
+    --bg-card: #111923;
+    --bg-panel: #161f2c;
+    --bg-hover: #1c2837;
+    --border: rgba(255,255,255,0.07);
+    --border-bright: rgba(255,255,255,0.15);
+    --text-primary: #f0f4f8;
+    --text-secondary: #8a9bb0;
+    --text-muted: #4a5a6a;
+    --green: #00d084;
+    --green-dim: rgba(0,208,132,0.12);
+    --green-border: rgba(0,208,132,0.3);
+    --red: #ff4d6a;
+    --red-dim: rgba(255,77,106,0.12);
+    --red-border: rgba(255,77,106,0.3);
+    --amber: #ffb83f;
+    --amber-dim: rgba(255,184,63,0.12);
+    --amber-border: rgba(255,184,63,0.3);
+    --blue: #4d9eff;
+    --blue-dim: rgba(77,158,255,0.12);
+    --blue-border: rgba(77,158,255,0.3);
+    --purple: #b06aff;
+    --purple-dim: rgba(176,106,255,0.12);
+    --radius: 10px;
+    --radius-sm: 6px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg-deep);
+    color: var(--text-primary);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .header {
+    background: var(--bg-card);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .header-title { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+  .header-title span { color: var(--amber); }
+  .header-controls { display: flex; align-items: center; gap: 8px; margin-left: auto; flex-wrap: wrap; }
+  .ctrl-group { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--text-secondary); }
+  .ctrl-group select, .ctrl-group input {
+    background: var(--bg-panel); border: 1px solid var(--border-bright);
+    color: var(--text-primary); font-size: 12px; padding: 4px 8px;
+    border-radius: var(--radius-sm); outline: none;
+  }
+  .ctrl-group input { width: 60px; text-align: center; }
+
+  .main { display: grid; grid-template-columns: 265px 1fr; flex: 1; min-height: 0; }
+
+  .sidebar {
+    background: var(--bg-card); border-right: 1px solid var(--border);
+    display: flex; flex-direction: column; overflow-y: auto; padding: 12px; gap: 9px;
+  }
+
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .stat-box { background: var(--bg-panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px; }
+  .stat-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 4px; }
+  .stat-value { font-size: 22px; font-weight: 700; color: var(--text-primary); line-height: 1; }
+  .stat-value.positive { color: var(--green); }
+  .stat-value.negative { color: var(--red); }
+
+  .next-card-box { background: var(--bg-panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px; }
+  .next-card-title { font-size: 9px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 8px; }
+  .next-card-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; }
+  .next-card-cell { border-radius: var(--radius-sm); padding: 6px 4px; text-align: center; border: 1px solid var(--border); background: var(--bg-card); }
+  .next-card-cell.favored { border-color: var(--green-border); background: var(--green-dim); }
+  .next-card-cell.somewhat { border-color: var(--amber-border); background: var(--amber-dim); }
+  .nc-label { font-size: 9px; color: var(--text-muted); margin-bottom: 3px; }
+  .nc-pct { font-size: 16px; font-weight: 700; color: var(--text-primary); }
+  .nc-cards { font-size: 9px; color: var(--text-secondary); margin-top: 2px; }
+  .next-card-cell.favored .nc-pct { color: var(--green); }
+  .next-card-cell.somewhat .nc-pct { color: var(--amber); }
+
+
+
+  .count-bar-wrap { background: var(--bg-panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px; }
+  .count-bar-label { display: flex; justify-content: space-between; font-size: 10px; color: var(--text-muted); margin-bottom: 6px; }
+  .count-bar-track { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; position: relative; }
+  .count-bar-fill { height: 100%; border-radius: 3px; transition: width 0.3s, background 0.3s; position: absolute; left: 0; }
+
+  .wong-box { border-radius: var(--radius); border: 1px solid var(--border); padding: 10px; background: var(--bg-panel); }
+  .wong-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 5px; }
+  .wong-status { font-size: 13px; font-weight: 700; margin-bottom: 2px; }
+  .wong-sub { font-size: 10px; color: var(--text-secondary); }
+  .wong-box.enter { border-color: var(--green-border); background: var(--green-dim); }
+  .wong-box.enter .wong-status { color: var(--green); }
+  .wong-box.wait { border-color: var(--amber-border); background: var(--amber-dim); }
+  .wong-box.wait .wong-status { color: var(--amber); }
+  .wong-box.leave { border-color: var(--red-border); background: var(--red-dim); }
+  .wong-box.leave .wong-status { color: var(--red); }
+
+  .bet-box { border-radius: var(--radius); border: 1px solid var(--border); padding: 11px; transition: all 0.3s; }
+  .bet-box.neutral { background: var(--amber-dim); border-color: var(--amber-border); }
+  .bet-box.positive { background: var(--green-dim); border-color: var(--green-border); }
+  .bet-box.negative { background: var(--red-dim); border-color: var(--red-border); }
+  .bet-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+  .bet-icon { font-size: 16px; }
+  .bet-amount { font-size: 22px; font-weight: 700; }
+  .bet-box.neutral .bet-amount { color: var(--amber); }
+  .bet-box.positive .bet-amount { color: var(--green); }
+  .bet-box.negative .bet-amount { color: var(--red); }
+  .bet-title { font-size: 12px; font-weight: 600; color: var(--text-primary); margin-bottom: 2px; }
+  .bet-sub { font-size: 10px; color: var(--text-secondary); }
+
+  .side-bets-box { background: var(--bg-panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px; }
+  .side-bets-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 7px; }
+  .side-bet-row { display: flex; align-items: center; justify-content: space-between; padding: 5px 7px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-card); margin-bottom: 4px; }
+  .side-bet-row:last-child { margin-bottom: 0; }
+  .side-bet-row.good { border-color: var(--green-border); background: var(--green-dim); }
+  .side-bet-row.ok { border-color: var(--amber-border); background: var(--amber-dim); }
+  .side-bet-row.bad { border-color: var(--red-border); background: var(--red-dim); }
+  .sb-name { font-size: 11px; font-weight: 600; color: var(--text-primary); }
+  .sb-advice { font-size: 10px; font-weight: 600; }
+  .side-bet-row.good .sb-advice { color: var(--green); }
+  .side-bet-row.ok .sb-advice { color: var(--amber); }
+  .side-bet-row.bad .sb-advice { color: var(--red); }
+  .sb-reason { font-size: 9px; color: var(--text-muted); margin-top: 2px; }
+
+  /* Strategy boxes */
+  .strategy-box { border-radius: var(--radius); border: 1px solid var(--border); padding: 11px; background: var(--bg-panel); }
+  .strategy-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 7px; }
+  .strategy-row { display: flex; gap: 6px; margin-bottom: 6px; }
+  .strategy-pill { flex: 1; border-radius: var(--radius-sm); padding: 7px 8px; border: 1px solid var(--border); background: var(--bg-card); }
+  .sp-tag { font-size: 8px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin-bottom: 3px; }
+  .sp-action { font-size: 17px; font-weight: 700; }
+  .sp-action.hit { color: var(--green); }
+  .sp-action.stand { color: var(--red); }
+  .sp-action.double { color: var(--amber); }
+  .sp-action.split { color: var(--blue); }
+  .sp-action.surrender { color: var(--purple); }
+  .sp-action.same { color: var(--text-muted); font-size: 11px; font-style: italic; font-weight: 400; }
+  .strategy-pill.highlight { border-color: var(--amber-border); background: var(--amber-dim); }
+  .strategy-reason { font-size: 10px; color: var(--text-secondary); line-height: 1.4; }
+  .strategy-empty { font-size: 11px; color: var(--text-muted); font-style: italic; }
+
+  /* AI Strategy box */
+  .insurance-alert { border-radius: var(--radius); border: 1px solid var(--red-border); padding: 9px; background: var(--red-dim); display: none; }
+  .insurance-alert.show { display: block; }
+  .insurance-alert .ia-title { font-size: 11px; font-weight: 700; color: var(--red); margin-bottom: 2px; }
+  .insurance-alert .ia-sub { font-size: 10px; color: var(--text-secondary); }
+
+  .sidebar-actions { display: flex; gap: 6px; }
+  .btn { flex: 1; padding: 8px; border-radius: var(--radius-sm); border: 1px solid var(--border-bright); background: var(--bg-panel); color: var(--text-secondary); font-size: 11px; cursor: pointer; transition: all 0.15s; display: flex; align-items: center; justify-content: center; gap: 4px; }
+  .btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+  .btn:active { transform: scale(0.97); }
+  .btn-danger { border-color: var(--red-border); color: var(--red); }
+  .btn-danger:hover { background: var(--red-dim); }
+
+  .dealt-log-wrap { background: var(--bg-panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px; flex: 1; min-height: 50px; overflow: hidden; display: flex; flex-direction: column; }
+  .dealt-log-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 6px; flex-shrink: 0; }
+  .dealt-log { display: flex; flex-wrap: wrap; gap: 3px; overflow-y: auto; flex: 1; }
+  .log-chip { font-size: 10px; padding: 2px 5px; border-radius: 3px; background: var(--bg-card); border: 1px solid var(--border); color: var(--text-secondary); font-weight: 600; }
+  .log-chip.red { color: #ff6b7a; }
+
+  .content { display: flex; flex-direction: column; padding: 14px; gap: 11px; overflow-y: auto; }
+  .section-title { font-size: 9px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 7px; }
+
+  .kbd-hint { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 9px 13px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .kbd-hint-label { font-size: 10px; color: var(--text-muted); }
+  .kbd { display: inline-flex; align-items: center; gap: 3px; font-size: 10px; color: var(--text-secondary); }
+  .key { background: var(--bg-panel); border: 1px solid var(--border-bright); border-radius: 3px; padding: 1px 5px; font-size: 9px; font-weight: 700; color: var(--text-primary); font-family: monospace; }
+
+  .card-grid-section { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 13px; }
+  .card-grid { display: flex; gap: 5px; flex-wrap: wrap; }
+  .card-btn { width: 50px; height: 64px; border-radius: var(--radius-sm); border: 1px solid var(--border-bright); background: var(--bg-panel); color: var(--text-primary); font-size: 17px; font-weight: 700; cursor: pointer; transition: all 0.1s; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; position: relative; }
+  .card-btn:hover { background: var(--bg-hover); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
+  .card-btn:active { transform: translateY(0) scale(0.96); }
+  .card-btn.red-card { color: #ff6b7a; }
+  .card-btn .card-count-badge { font-size: 9px; color: var(--text-muted); }
+  .card-btn .hi-lo { position: absolute; top: 3px; right: 4px; font-size: 9px; font-weight: 700; opacity: 0.7; }
+  .card-btn .hi-lo.plus { color: var(--green); }
+  .card-btn .hi-lo.minus { color: var(--red); }
+  .card-btn .hi-lo.zero { color: var(--text-muted); }
+
+  .hands-section { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .hand-panel { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 13px; }
+  .hand-panel.my-panel { border-color: rgba(0,208,132,0.2); }
+  .hand-panel.dealer-panel { border-color: rgba(255,77,106,0.2); }
+  .hand-panel-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 9px; }
+  .hand-panel-title { font-size: 11px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; }
+  .hand-total { font-size: 20px; font-weight: 700; color: var(--text-primary); }
+  .hand-total.bust { color: var(--red); }
+  .hand-card-btns { display: flex; gap: 3px; flex-wrap: wrap; margin-bottom: 8px; }
+  .hand-card-btn { width: 37px; height: 46px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-panel); color: var(--text-primary); font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.1s; display: flex; align-items: center; justify-content: center; }
+  .hand-card-btn:hover { background: var(--bg-hover); border-color: var(--border-bright); transform: translateY(-1px); }
+  .hand-card-btn.red-card { color: #ff6b7a; }
+  .hand-display { display: flex; gap: 5px; flex-wrap: wrap; min-height: 42px; align-items: center; }
+  .playing-card { width: 34px; height: 46px; border-radius: 4px; background: #fff; border: 1px solid #ddd; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; color: #1a1a1a; position: relative; cursor: pointer; transition: all 0.1s; flex-shrink: 0; }
+  .playing-card.red { color: #cc0000; }
+  .playing-card:hover { transform: translateY(-3px); box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+  .playing-card .remove-x { position: absolute; top: -5px; right: -5px; width: 13px; height: 13px; border-radius: 50%; background: #333; color: #fff; font-size: 7px; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.1s; }
+  .playing-card:hover .remove-x { opacity: 1; }
+  .hand-empty { font-size: 11px; color: var(--text-muted); font-style: italic; }
+
+  .note-box { background: var(--bg-panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 9px 12px; font-size: 10px; color: var(--text-muted); }
+  .note-box strong { color: var(--text-secondary); }
+
+  ::-webkit-scrollbar { width: 3px; height: 3px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 2px; }
+  @keyframes flash { 0% { background: rgba(0,208,132,0.25); } 100% { background: var(--bg-panel); } }
+  .flashing { animation: flash 0.3s ease; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-title">♠ Card Counter Pro <span>Evolution Edition</span></div>
+  <div class="header-controls">
+    <div class="ctrl-group">
+      <span>Decks:</span>
+      <select id="decks-select" onchange="updateDecks()">
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="5">5</option>
+        <option value="6">6</option>
+        <option value="8" selected>8</option>
+      </select>
+    </div>
+    <div class="ctrl-group">
+      <span>Base $</span>
+      <input type="number" id="base-bet" value="10" min="1" onchange="render()">
+    </div>
+  </div>
+</div>
+
+<div class="main">
+  <div class="sidebar">
+
+    <div class="stat-grid">
+      <div class="stat-box"><div class="stat-label">Running</div><div class="stat-value" id="stat-running">0</div></div>
+      <div class="stat-box"><div class="stat-label">True Count</div><div class="stat-value" id="stat-true">0</div></div>
+      <div class="stat-box"><div class="stat-label">Cards Seen</div><div class="stat-value" id="stat-seen">0</div></div>
+      <div class="stat-box"><div class="stat-label">Decks Left</div><div class="stat-value" id="stat-left">8.0</div></div>
+    </div>
+
+    <div class="next-card-box">
+      <div class="next-card-title">Next Card Likelihood</div>
+      <div class="next-card-grid">
+        <div class="next-card-cell" id="nc-low"><div class="nc-label">Low (2–6)</div><div class="nc-pct" id="nc-low-pct">38%</div><div class="nc-cards" id="nc-low-cards">—</div></div>
+        <div class="next-card-cell" id="nc-mid"><div class="nc-label">Mid (7–9)</div><div class="nc-pct" id="nc-mid-pct">23%</div><div class="nc-cards" id="nc-mid-cards">—</div></div>
+        <div class="next-card-cell" id="nc-high"><div class="nc-label">High (10+A)</div><div class="nc-pct" id="nc-high-pct">38%</div><div class="nc-cards" id="nc-high-cards">—</div></div>
+      </div>
+    </div>
+
+
+
+    <div class="count-bar-wrap">
+      <div class="count-bar-label"><span>Cold</span><span id="bar-label">Neutral</span><span>Hot</span></div>
+      <div class="count-bar-track"><div class="count-bar-fill" id="count-bar" style="width:50%;background:var(--amber)"></div></div>
+    </div>
+
+    <div class="wong-box wait" id="wong-box">
+      <div class="wong-label">Wonging Signal</div>
+      <div class="wong-status" id="wong-status">⏳ Sit & Watch</div>
+      <div class="wong-sub" id="wong-sub">Wait for TC +2 before betting big</div>
+    </div>
+
+    <div class="bet-box neutral" id="bet-box">
+      <div class="bet-header"><span class="bet-icon" id="bet-icon">💰</span><span class="bet-amount" id="bet-amount">1x</span></div>
+      <div class="bet-title" id="bet-title">Neutral — bet base</div>
+      <div class="bet-sub" id="bet-sub">No edge yet</div>
+    </div>
+
+    <div class="side-bets-box">
+      <div class="side-bets-label">Perfect Pairs Advice</div>
+      <div id="side-bets-content"><div style="font-size:10px;color:var(--text-muted);font-style:italic">Tracking shoe...</div></div>
+    </div>
+
+    <div class="strategy-box">
+      <div class="strategy-label">Basic + Count Strategy</div>
+      <div id="strategy-content"><div class="strategy-empty">Add your hand + dealer upcard →</div></div>
+    </div>
+
+    <div class="insurance-alert" id="insurance-alert">
+      <div class="ia-title">🚫 Decline Insurance</div>
+      <div class="ia-sub" id="insurance-sub">Never take insurance — 7.7% house edge</div>
+    </div>
+
+    <div class="sidebar-actions">
+      <button class="btn" onclick="newRound()">↺ New Round</button>
+      <button class="btn btn-danger" onclick="fullReset()">⌫ Reset Shoe</button>
+    </div>
+
+    <div class="dealt-log-wrap">
+      <div class="dealt-log-label">Cards dealt this shoe</div>
+      <div class="dealt-log" id="dealt-log"><span style="font-size:10px;color:var(--text-muted);font-style:italic">none yet</span></div>
+    </div>
+
+  </div>
+
+  <div class="content">
+    <div class="note-box">
+      <strong>Shoe tracker (top grid + keyboard):</strong> track every card dealt to anyone. &nbsp;|&nbsp; <strong>Hand panels:</strong> your cards + dealer upcard for strategy — does not affect shoe count.
+    </div>
+
+    <div class="kbd-hint">
+      <span class="kbd-hint-label">Keyboard (tracks shoe):</span>
+      <span class="kbd"><span class="key">A</span> Ace</span>
+      <span class="kbd"><span class="key">2–9</span> cards</span>
+      <span class="kbd"><span class="key">0/T</span> Ten</span>
+      <span class="kbd"><span class="key">J Q K</span> face</span>
+      <span class="kbd"><span class="key">N</span> new round</span>
+      <span class="kbd"><span class="key">R</span> reset shoe</span>
+    </div>
+
+    <div class="card-grid-section">
+      <div class="section-title">Track every card dealt to anyone at the table</div>
+      <div class="card-grid" id="all-card-grid"></div>
+    </div>
+
+    <div class="hands-section">
+      <div class="hand-panel my-panel">
+        <div class="hand-panel-header">
+          <span class="hand-panel-title">🟢 Your Hand</span>
+          <span class="hand-total" id="my-total"></span>
+        </div>
+        <div class="section-title">For strategy only — does NOT affect shoe count</div>
+        <div class="hand-card-btns" id="my-card-btns"></div>
+        <div class="hand-display" id="my-hand-display"><span class="hand-empty">no cards</span></div>
+      </div>
+      <div class="hand-panel dealer-panel">
+        <div class="hand-panel-header">
+          <span class="hand-panel-title">🔴 Dealer Upcard</span>
+          <span class="hand-total" id="dealer-total"></span>
+        </div>
+        <div class="section-title">For strategy only — does NOT affect shoe count</div>
+        <div class="hand-card-btns" id="dealer-card-btns"></div>
+        <div class="hand-display" id="dealer-hand-display"><span class="hand-empty">no card</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const CARDS = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+const HI_LO = {A:-1,'2':1,'3':1,'4':1,'5':1,'6':1,'7':0,'8':0,'9':0,'10':-1,J:-1,Q:-1,K:-1};
+const isRed = c => ['A','3','5','7','9','Q','K'].includes(c);
+
+let state = {
+  decks: 8,
+  runningCount: 0,
+  cardsSeen: 0,
+  allDealt: [],
+  remaining: {},
+  myHand: [],
+  dealerHand: [],
+};
+
+
+function initRemaining() {
+  const d = state.decks;
+  state.remaining = {};
+  CARDS.forEach(c => state.remaining[c] = 4 * d);
+}
+
+function updateDecks() { state.decks = parseInt(document.getElementById('decks-select').value); fullReset(); }
+function totalCards() { return state.decks * 52; }
+function decksLeft() { return Math.max(0.5, (totalCards() - state.cardsSeen) / 52); }
+function trueCount() { return Math.round((state.runningCount / decksLeft()) * 10) / 10; }
+function cardValue(c) { if(['J','Q','K'].includes(c)) return 10; if(c==='A') return 11; return parseInt(c); }
+
+function handTotal(cards) {
+  let total=0, aces=0;
+  cards.forEach(c => { let v=cardValue(c); if(c==='A') aces++; total+=v; });
+  while(total>21 && aces>0) { total-=10; aces--; }
+  return total;
+}
+function isSoftHand(cards) {
+  let total=0, aces=0;
+  cards.forEach(c => { if(c==='A') aces++; total+=cardValue(c); });
+  return aces>0 && total<=21 && (total-10) !== handTotal(cards);
+}
+
+function addToShoe(card) {
+  state.runningCount += HI_LO[card];
+  state.cardsSeen++;
+  state.allDealt.push(card);
+  if(state.remaining[card] > 0) state.remaining[card]--;
+  flashCard(card);
+  render();
+}
+
+function addToMyHand(card) { state.myHand.push(card); render(); }
+function addToDealerHand(card) {
+  if(state.dealerHand.length>=1) state.dealerHand[0]=card;
+  else state.dealerHand.push(card);
+  render();
+}
+function removeMyCard(i) { state.myHand.splice(i,1); render(); }
+function removeDealerCard() { state.dealerHand.pop(); render(); }
+function newRound() { state.myHand=[]; state.dealerHand=[]; render(); }
+function fullReset() { state.runningCount=0; state.cardsSeen=0; state.allDealt=[]; state.myHand=[]; state.dealerHand=[]; initRemaining(); render(); }
+
+
+function getNextCardLikelihood() {
+  const rem = state.remaining;
+  const totalRem = Object.values(rem).reduce((a,b)=>a+b,0);
+  if(totalRem===0) return {low:0,mid:0,high:0,lowCount:0,midCount:0,highCount:0};
+  const lowCount = ['2','3','4','5','6'].reduce((a,c)=>a+(rem[c]||0),0);
+  const midCount = ['7','8','9'].reduce((a,c)=>a+(rem[c]||0),0);
+  const highCount = ['10','J','Q','K','A'].reduce((a,c)=>a+(rem[c]||0),0);
+  return {
+    low: Math.round((lowCount/totalRem)*1000)/10,
+    mid: Math.round((midCount/totalRem)*1000)/10,
+    high: Math.round((highCount/totalRem)*1000)/10,
+    lowCount, midCount, highCount, totalRem
+  };
+}
+
+function getBasicStrategy(myCards, dealerCard) {
+  if(!myCards.length || !dealerCard) return null;
+  const total = handTotal(myCards);
+  const dv = cardValue(dealerCard);
+  const isPair = myCards.length===2 && myCards[0]===myCards[1];
+  const soft = myCards.length===2 && myCards.includes('A') && isSoftHand(myCards);
+  if(myCards.length===2) {
+    if(total===16&&(dv===9||dv===10||dv===11)) return {action:'Surrender',why:'16 vs 9/10/A',cls:'surrender'};
+    if(total===15&&dv===10) return {action:'Surrender',why:'15 vs 10',cls:'surrender'};
+    if(total===17&&dv===11) return {action:'Surrender',why:'17 vs Ace',cls:'surrender'};
+  }
+  if(isPair) {
+    const pv=cardValue(myCards[0]);
+    if(pv===11) return {action:'Split',why:'Always split Aces',cls:'split'};
+    if(pv===8)  return {action:'Split',why:'Always split 8s',cls:'split'};
+    if(pv===10) return {action:'Stand',why:'Never split tens',cls:'stand'};
+    if(pv===5)  return {action:'Double',why:'Double pair of 5s',cls:'double'};
+    if(pv===4)  {if(dv===5||dv===6) return {action:'Split',why:'Dealer bust zone',cls:'split'}; return {action:'Hit',why:'',cls:'hit'};}
+    if(pv===2||pv===3){if(dv<=7) return {action:'Split',why:'Small pairs',cls:'split'}; return {action:'Hit',why:'',cls:'hit'};}
+    if(pv===6)  {if(dv<=6) return {action:'Split',why:'',cls:'split'}; return {action:'Hit',why:'',cls:'hit'};}
+    if(pv===7)  {if(dv<=7) return {action:'Split',why:'',cls:'split'}; return {action:'Hit',why:'',cls:'hit'};}
+    if(pv===9)  {if(dv===7||dv===10||dv===11) return {action:'Stand',why:'18 is strong',cls:'stand'}; return {action:'Split',why:'',cls:'split'};}
+  }
+  if(soft) {
+    const other=myCards.find(c=>c!=='A'); const ov=cardValue(other);
+    if(ov>=8) return {action:'Stand',why:`Soft ${total}`,cls:'stand'};
+    if(ov===7){if(dv>=3&&dv<=6) return {action:'Double',why:'Soft 18 double',cls:'double'}; if(dv===2||dv===7||dv===8) return {action:'Stand',why:'',cls:'stand'}; return {action:'Hit',why:'',cls:'hit'};}
+    if(ov===6){if(dv>=3&&dv<=6) return {action:'Double',why:'',cls:'double'}; return {action:'Hit',why:'',cls:'hit'};}
+    if(ov===4||ov===5){if(dv>=4&&dv<=6) return {action:'Double',why:'',cls:'double'}; return {action:'Hit',why:'',cls:'hit'};}
+    if(ov===2||ov===3){if(dv===5||dv===6) return {action:'Double',why:'',cls:'double'}; return {action:'Hit',why:'',cls:'hit'};}
+  }
+  if(total>=17) return {action:'Stand',why:'17+ stand',cls:'stand'};
+  if(total===16){if(dv>=7) return {action:'Hit',why:'vs strong dealer',cls:'hit'}; return {action:'Stand',why:'dealer bust zone',cls:'stand'};}
+  if(total===15){if(dv>=7) return {action:'Hit',why:'',cls:'hit'}; return {action:'Stand',why:'',cls:'stand'};}
+  if(total>=13&&total<=14){if(dv<=6) return {action:'Stand',why:'dealer bust zone',cls:'stand'}; return {action:'Hit',why:'',cls:'hit'};}
+  if(total===12){if(dv>=4&&dv<=6) return {action:'Stand',why:'dealer bust zone',cls:'stand'}; return {action:'Hit',why:'',cls:'hit'};}
+  if(total===11) return {action:'Double',why:'Best double spot',cls:'double'};
+  if(total===10){if(dv<=9) return {action:'Double',why:'',cls:'double'}; return {action:'Hit',why:'',cls:'hit'};}
+  if(total===9){if(dv>=3&&dv<=6) return {action:'Double',why:'',cls:'double'}; return {action:'Hit',why:'',cls:'hit'};}
+  return {action:'Hit',why:'Low total',cls:'hit'};
+}
+
+function getCountAdjustedStrategy(myCards, dealerCard) {
+  const basic = getBasicStrategy(myCards, dealerCard);
+  if(!basic) return null;
+  const tc = trueCount();
+  const total = handTotal(myCards);
+  const dv = cardValue(dealerCard);
+  const likelihood = getNextCardLikelihood();
+  let adjusted = null;
+  if(total===16&&dv===10&&tc>=0) adjusted={action:'Stand',why:`TC ${tc.toFixed(1)} — stand 16 vs 10`,cls:'stand'};
+  else if(total===15&&dv===10&&tc>=4) adjusted={action:'Stand',why:`TC ${tc.toFixed(1)} — stand 15 vs 10`,cls:'stand'};
+  else if(total===12&&dv===2&&tc>=3) adjusted={action:'Stand',why:`TC ${tc.toFixed(1)} — stand 12 vs 2`,cls:'stand'};
+  else if(total===12&&dv===3&&tc>=2) adjusted={action:'Stand',why:`TC ${tc.toFixed(1)} — stand 12 vs 3`,cls:'stand'};
+  else if(total===13&&dv===2&&tc<=-1) adjusted={action:'Hit',why:`TC ${tc.toFixed(1)} — hit 13 vs 2`,cls:'hit'};
+  else if(total===9&&dv===2&&tc>=1) adjusted={action:'Double',why:`TC ${tc.toFixed(1)} — double 9 vs 2`,cls:'double'};
+  else if(total===10&&dv===10&&tc>=4) adjusted={action:'Double',why:`TC ${tc.toFixed(1)} — double 10 vs 10`,cls:'double'};
+  else if(total===11&&dv===11&&tc>=1) adjusted={action:'Double',why:`TC ${tc.toFixed(1)} — double 11 vs Ace`,cls:'double'};
+  else if(tc<=-2&&likelihood.low>45&&total===16&&basic.action==='Stand') adjusted={action:'Hit',why:`TC ${tc.toFixed(1)} + ${likelihood.low}% low cards`,cls:'hit'};
+  else if(tc<=-2&&likelihood.low>45&&total===12&&basic.action==='Stand') adjusted={action:'Hit',why:`Low count — ${likelihood.low}% low cards`,cls:'hit'};
+  return {basic, adjusted};
+}
+
+function flashCard(card) {
+  document.querySelectorAll('.card-btn').forEach(b=>{
+    if(b.dataset.card===card){b.classList.add('flashing');setTimeout(()=>b.classList.remove('flashing'),300);}
+  });
+}
+
+function buildCardGrid(containerId, clickFn, small=false) {
+  const el=document.getElementById(containerId); el.innerHTML='';
+  CARDS.forEach(c=>{
+    const btn=document.createElement('button');
+    const hiLo=HI_LO[c];
+    if(small){btn.className=`hand-card-btn${isRed(c)?' red-card':''}`;btn.textContent=c;}
+    else{btn.className=`card-btn${isRed(c)?' red-card':''}`;btn.dataset.card=c;btn.innerHTML=`<span class="hi-lo ${hiLo>0?'plus':hiLo<0?'minus':'zero'}">${hiLo>0?'+'+hiLo:hiLo}</span>${c}<span class="card-count-badge">tap/key</span>`;}
+    btn.onclick=()=>clickFn(c);el.appendChild(btn);
+  });
+}
+
+function renderNextCard() {
+  const l=getNextCardLikelihood(); const max=Math.max(l.low,l.mid,l.high);
+  ['low','mid','high'].forEach(type=>{
+    const pct=l[type],count=l[type+'Count'];
+    const el=document.getElementById('nc-'+type);
+    document.getElementById('nc-'+type+'-pct').textContent=pct.toFixed(1)+'%';
+    document.getElementById('nc-'+type+'-cards').textContent=count+' left';
+    el.className='next-card-cell';
+    if(pct===max&&pct>35) el.classList.add('favored');
+    else if(pct>=max-3) el.classList.add('somewhat');
+  });
+}
+
+function renderStats() {
+  const tc=trueCount(),rc=state.runningCount;
+  const rEl=document.getElementById('stat-running'),tEl=document.getElementById('stat-true');
+  rEl.textContent=(rc>0?'+':'')+rc; rEl.className='stat-value'+(rc>0?' positive':rc<0?' negative':'');
+  tEl.textContent=(tc>0?'+':'')+tc.toFixed(1); tEl.className='stat-value'+(tc>0?' positive':tc<0?' negative':'');
+  document.getElementById('stat-seen').textContent=state.cardsSeen;
+  document.getElementById('stat-left').textContent=decksLeft().toFixed(1);
+}
+
+
+
+function renderCountBar() {
+  const tc=trueCount(),clamp=Math.max(-6,Math.min(6,tc)),pct=((clamp+6)/12)*100;
+  document.getElementById('count-bar').style.width=pct+'%';
+  document.getElementById('count-bar').style.background=tc>1?'var(--green)':tc<-1?'var(--red)':'var(--amber)';
+  const labels=['Very Cold','Cold','Neutral','Warm','Hot','Max!'];
+  document.getElementById('bar-label').textContent=labels[Math.min(5,Math.max(0,Math.floor((clamp+6)/2)))];
+}
+
+function renderWonging() {
+  const tc=trueCount(),box=document.getElementById('wong-box');
+  const status=document.getElementById('wong-status'),sub=document.getElementById('wong-sub');
+  box.className='wong-box';
+  if(tc>=2){box.classList.add('enter');status.textContent='✅ Jump In Now';sub.textContent=`TC +${tc.toFixed(1)} — favorable shoe, bet big`;}
+  else if(tc>=0){box.classList.add('wait');status.textContent='⏳ Sit & Watch';sub.textContent=`TC ${tc.toFixed(1)} — wait for count to rise`;}
+  else{box.classList.add('leave');status.textContent='❌ Leave This Shoe';sub.textContent=`TC ${tc.toFixed(1)} — cold shoe, find another table`;}
+}
+
+function renderBetSuggestion() {
+  const tc=trueCount(),base=parseFloat(document.getElementById('base-bet').value)||10,box=document.getElementById('bet-box');
+  let mult,cls,icon,title,sub;
+  if(tc<=-2){mult=0;cls='negative';icon='🚫';title='Sit out or min bet';sub=`TC ${tc.toFixed(1)} — strong house edge`;}
+  else if(tc<0){mult=0.5;cls='negative';icon='📉';title='Half your base bet';sub=`TC ${tc.toFixed(1)} — slight house edge`;}
+  else if(tc<=1){mult=1;cls='neutral';icon='💰';title='Bet base amount';sub=`TC ${tc.toFixed(1)} — no edge`;}
+  else if(tc<=2){mult=2;cls='positive';icon='📈';title='Double up';sub=`TC ${tc.toFixed(1)} — slight player edge`;}
+  else if(tc<=3){mult=4;cls='positive';icon='🔥';title='4x your bet!';sub=`TC ${tc.toFixed(1)} — solid advantage`;}
+  else if(tc<=4){mult=6;cls='positive';icon='💎';title='6x — shoe is hot!';sub=`TC ${tc.toFixed(1)} — strong advantage`;}
+  else{mult=12;cls='positive';icon='🚀';title='MAX BET — 12x!';sub=`TC ${tc.toFixed(1)} — maximum edge`;}
+  box.className=`bet-box ${cls}`;
+  document.getElementById('bet-icon').textContent=icon;
+  document.getElementById('bet-amount').textContent=mult===0?'Min bet':`${mult}x base`;
+  document.getElementById('bet-title').textContent=title;
+  document.getElementById('bet-sub').textContent=sub;
+}
+
+function renderSideBets() {
+  const el=document.getElementById('side-bets-content');
+  const tc=trueCount(),rem=state.remaining,totalRem=Object.values(rem).reduce((a,b)=>a+b,0);
+  if(totalRem===0){el.innerHTML='<div style="font-size:10px;color:var(--text-muted)">Reset shoe to begin</div>';return;}
+  const maxRankCount=Math.max(...CARDS.map(c=>rem[c]||0));
+  const maxRankPct=(maxRankCount/totalRem)*100;
+  let ppClass,ppAdvice,ppReason;
+  if(tc>=4&&maxRankPct>=6){ppClass='good';ppAdvice='✅ Bet Perfect Pairs';ppReason=`TC +${tc.toFixed(1)}, one rank at ${maxRankPct.toFixed(1)}% of shoe`;}
+  else if(tc>=2){ppClass='ok';ppAdvice='⚠ Borderline';ppReason='Slight edge possible, house edge still ~6%';}
+  else{ppClass='bad';ppAdvice='❌ Skip it';ppReason=`TC ${tc.toFixed(1)} — not enough concentration`;}
+  el.innerHTML=`<div class="side-bet-row ${ppClass}"><div><div class="sb-name">Perfect Pairs</div><div class="sb-reason">${ppReason}</div></div><div class="sb-advice">${ppAdvice}</div></div>`;
+}
+
+function renderStrategy() {
+  const result=getCountAdjustedStrategy(state.myHand,state.dealerHand[0]);
+  const el=document.getElementById('strategy-content');
+  if(!result){el.innerHTML='<div class="strategy-empty">Add your hand + dealer upcard →</div>';return;}
+  const {basic,adjusted}=result;
+  const myT=handTotal(state.myHand);
+  const same=!adjusted||adjusted.action===basic.action;
+  if(same){
+    el.innerHTML=`<div class="strategy-row"><div class="strategy-pill"><div class="sp-tag">Basic</div><div class="sp-action ${basic.cls}">${basic.action}</div></div><div class="strategy-pill"><div class="sp-tag">Count Adjusted</div><div class="sp-action same">Same play</div></div></div><div class="strategy-reason">${basic.why||'Optimal play'}</div><div style="margin-top:5px;font-size:9px;color:var(--text-muted)">Total: ${myT}${myT>21?' (BUST)':''} | Dealer: ${state.dealerHand[0]||'—'} | TC: ${trueCount().toFixed(1)}</div>`;
+  } else {
+    el.innerHTML=`<div class="strategy-row"><div class="strategy-pill"><div class="sp-tag">Basic</div><div class="sp-action ${basic.cls}">${basic.action}</div></div><div class="strategy-pill highlight"><div class="sp-tag">⚡ Count Says</div><div class="sp-action ${adjusted.cls}">${adjusted.action}</div></div></div><div class="strategy-reason">${adjusted.why}</div><div style="margin-top:5px;font-size:9px;color:var(--text-muted)">Total: ${myT}${myT>21?' (BUST)':''} | Dealer: ${state.dealerHand[0]||'—'} | TC: ${trueCount().toFixed(1)}</div>`;
+  }
+}
+
+function renderInsurance() {
+  const dc=state.dealerHand[0],tc=trueCount(),alert=document.getElementById('insurance-alert');
+  if(dc==='A'){alert.classList.add('show');document.getElementById('insurance-sub').textContent=tc>=3?`TC ${tc.toFixed(1)} — borderline but still decline`:`TC ${tc.toFixed(1)} — decline insurance, 7.7% house edge`;}
+  else alert.classList.remove('show');
+}
+
+function renderHands() {
+  const myEl=document.getElementById('my-hand-display');
+  if(!state.myHand.length){myEl.innerHTML='<span class="hand-empty">no cards</span>';}
+  else{myEl.innerHTML='';state.myHand.forEach((c,i)=>{const card=document.createElement('div');card.className=`playing-card${isRed(c)?' red':''}`;card.innerHTML=`${c}<span class="remove-x" onclick="removeMyCard(${i})">✕</span>`;myEl.appendChild(card);});}
+  const dEl=document.getElementById('dealer-hand-display');
+  if(!state.dealerHand.length){dEl.innerHTML='<span class="hand-empty">no card</span>';}
+  else{const c=state.dealerHand[0];dEl.innerHTML=`<div class="playing-card${isRed(c)?' red':''}">${c}<span class="remove-x" onclick="removeDealerCard()">✕</span></div>`;}
+  const myT=handTotal(state.myHand),myTEl=document.getElementById('my-total');
+  if(state.myHand.length){myTEl.textContent=myT;myTEl.className='hand-total'+(myT>21?' bust':'');}else myTEl.textContent='';
+  document.getElementById('dealer-total').textContent=state.dealerHand.length?state.dealerHand[0]:'';
+}
+
+function renderDealtLog() {
+  const el=document.getElementById('dealt-log');
+  if(!state.allDealt.length){el.innerHTML='<span style="font-size:10px;color:var(--text-muted);font-style:italic">none yet</span>';return;}
+  el.innerHTML='';
+  state.allDealt.forEach(c=>{const span=document.createElement('span');span.className=`log-chip${isRed(c)?' red':''}`;span.textContent=c;el.appendChild(span);});
+  el.scrollTop=el.scrollHeight;
+}
+
+function render() {
+  renderStats(); renderNextCard(); renderCountBar();
+  renderWonging(); renderBetSuggestion(); renderSideBets();
+  renderStrategy(); renderInsurance(); renderHands(); renderDealtLog();
+}
+
+const KEY_MAP={'a':'A','2':'2','3':'3','4':'4','5':'5','6':'6','7':'7','8':'8','9':'9','0':'10','t':'10','j':'J','q':'Q','k':'K'};
+document.addEventListener('keydown', e=>{
+  if(e.target.tagName==='INPUT'||e.target.tagName==='SELECT') return;
+  const key=e.key.toLowerCase();
+  if(key==='n'){newRound();return;}
+  if(key==='r'&&!e.ctrlKey&&!e.metaKey){fullReset();return;}
+  const card=KEY_MAP[key];
+  if(card) addToShoe(card);
+});
+
+buildCardGrid('all-card-grid', addToShoe, false);
+buildCardGrid('my-card-btns', addToMyHand, true);
+buildCardGrid('dealer-card-btns', addToDealerHand, true);
+initRemaining();
+render();
+</script>
+</body>
+</html>
